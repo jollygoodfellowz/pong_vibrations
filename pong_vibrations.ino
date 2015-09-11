@@ -14,6 +14,36 @@
 //
 
 #include <TVout.h>
+
+/*   
+          0   1
+      -------------         <---- Example of what braille looks like.
+      0|  1   0             <---- This is the letter A
+       | ----------         
+      1|  0   0
+       | ----------
+      2|  0   0
+*/
+
+// The PWM location values as defined by the grid above
+#define G00 3    
+#define G01 5   
+#define G10 6    
+#define G11 9    
+#define G20 10  
+#define G21 11  
+
+// The total number of PWM slots we have
+#define MAXPWM 6
+
+// A few definitions for on, off and second
+#define OFF 0
+#define ON 1
+#define SEC 1000
+
+// This is for analog write. Change this for the pulse amount
+#define PULSE 80
+
 #define WHEEL_ONE_PIN 0 //analog
 #define WHEEL_TWO_PIN 0 //analog
 #define BUTTON_ONE_PIN 2 //digital
@@ -31,6 +61,7 @@
 #define PLAY_TO 7
 #define LEFT 0
 #define RIGHT 1
+
 
 
 TVout TV;
@@ -57,7 +88,6 @@ int state = IN_MENU;
 
 void processInputs() 
 {                                                                                                                                    
-
   joystickstate=2;
   
   pinMode(upPin,INPUT);  
@@ -94,8 +124,6 @@ void processInputs()
   buttonStatus = (digitalRead(BUTTON_ONE_PIN) == HIGH);
 }
 
-
-
 void drawGameScreen() 
 {
   TV.clear_screen();
@@ -130,7 +158,36 @@ void drawGameScreen()
   
   //draw ball
   TV.set_pixel(ballX, ballY, 2);
+  // TODO: Need to add in the vibrations here
+
 }
+
+void virbate_ball_coords()
+{
+  // TODO: Need to add a way to send out vibrations to PWM slot
+}
+// Interpret the message recieved, boolean array representing braille alphabet
+void sendPWM(bool PWMloc[]) 
+{
+
+  // Array that holds the values of all the PWM values
+  int PWMs[MAXPWM] = {G00,G01,
+                      G10,G11,
+                      G20,G21};
+  int i;
+  for(i = 0; i < MAXPWM; i++) 
+    if(PWMloc[i] == ON)             // If the index has a value of 1 then we match this to the grid that represents the motor
+      analogWrite(PWMs[i], PULSE);  // Vibrate
+    
+  // The pause in between each letter
+  delay(SEC);
+  
+  // Now turn all of the motors off
+  for(i = 0; i < MAXPWM; i++) 
+    if(PWMloc[i] == ON)             // If the motor is on we need to turn it off for the next letter
+      analogWrite(PWMs[i], OFF);    // Turn the motor off
+}
+
 
 //player == LEFT or RIGHT
 void playerScored(byte player) 
@@ -206,6 +263,13 @@ void drawMenu()
 
 void setup() 
 {
+  // initialize the digital pin as an output.
+  pinMode(G00, OUTPUT);  
+  pinMode(G01, OUTPUT);
+  pinMode(G10, OUTPUT);
+  pinMode(G11, OUTPUT);
+  pinMode(G20, OUTPUT);
+  pinMode(G21, OUTPUT);
   Serial.begin(9600);
   
   x=0;
